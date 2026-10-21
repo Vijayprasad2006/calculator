@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>demo1 • Scientific Calculator</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">🧮 <span>demo1</span> Scientific Calculator</div>
+  <div class="top-actions">
+    <div class="angle-toggle" role="tablist" aria-label="Angle mode">
+      <button id="degBtn" class="active" title="Degrees">DEG</button>
+      <button id="radBtn" title="Radians">RAD</button>
+    </div>
+    <button id="themeBtn" title="Toggle theme">🌙</button>
+  </div>
+</header>
+
+<main class="layout">
+  <section class="calc-card">
+    <div class="display-wrap">
+      <div id="expression" class="expression" title="Expression">0</div>
+      <div id="result" class="result">= 0</div>
+      <div id="error" class="error" hidden></div>
+    </div>
+
+    <div class="memory-row">
+      <button data-mem="MC">MC</button>
+      <button data-mem="MR">MR</button>
+      <button data-mem="M+">M+</button>
+      <button data-mem="M-">M−</button>
+      <button data-mem="MS">MS</button>
+      <span id="memIndicator" class="mem-indicator" hidden>M</span>
+    </div>
+
+    <div class="grid scientific">
+      <button data-insert="sin(" class="fn">sin</button>
+      <button data-insert="cos(" class="fn">cos</button>
+      <button data-insert="tan(" class="fn">tan</button>
+      <button data-insert="asin(" class="fn">sin⁻¹</button>
+      <button data-insert="acos(" class="fn">cos⁻¹</button>
+      <button data-insert="atan(" class="fn">tan⁻¹</button>
+      <button data-insert="ln(" class="fn">ln</button>
+      <button data-insert="log(" class="fn">log₁₀</button>
+      <button data-insert="sqrt(" class="fn">√</button>
+      <button data-insert="cbrt(" class="fn">∛</button>
+      <button data-insert="abs(" class="fn">|x|</button>
+      <button data-insert="exp(" class="fn">eˣ</button>
+      <button data-insert="^" class="fn">xʸ</button>
+      <button data-insert="^2" class="fn">x²</button>
+      <button data-insert="^3" class="fn">x³</button>
+      <button data-insert="!" class="fn">n!</button>
+      <button data-insert="pi" class="fn">π</button>
+      <button data-insert="e" class="fn">e</button>
+      <button data-insert="(" class="fn">(</button>
+      <button data-insert=")" class="fn">)</button>
+    </div>
+
+    <div class="grid main">
+      <button id="clearBtn" class="danger">C</button>
+      <button id="backBtn" class="util">⌫</button>
+      <button data-insert="%" class="util">%</button>
+      <button data-insert="/" class="op">÷</button>
+      <button data-insert="7" class="num">7</button>
+      <button data-insert="8" class="num">8</button>
+      <button data-insert="9" class="num">9</button>
+      <button data-insert="*" class="op">×</button>
+      <button data-insert="4" class="num">4</button>
+      <button data-insert="5" class="num">5</button>
+      <button data-insert="6" class="num">6</button>
+      <button data-insert="-" class="op">−</button>
+      <button data-insert="1" class="num">1</button>
+      <button data-insert="2" class="num">2</button>
+      <button data-insert="3" class="num">3</button>
+      <button data-insert="+" class="op">+</button>
+      <button data-insert="0" class="num zero">0</button>
+      <button data-insert="." class="num">.</button>
+      <button data-insert="00" class="num">00</button>
+      <button id="equalsBtn" class="equals">=</button>
+    </div>
+
+    <div class="hint">Keyboard: 0-9 + - * / % ^ ( ) . Enter(=) Backspace C • Example: <code>sin(30)+sqrt(16)*2^3</code></div>
+  </section>
+
+  <aside class="history-card">
+    <div class="history-head">
+      <h2>History</h2>
+      <button id="clearHistoryBtn" class="small-danger">Clear all</button>
+    </div>
+    <div id="historyList" class="history-list"><p class="empty">No calculations yet.</p></div>
+  </aside>
+</main>
+
+<footer>Full-stack: Express API (<code>/api/calculate</code>) + file history • demo1 @ Downloads/demo1</footer>
+<script src="app.js"></script>
+</body>
+</html>
