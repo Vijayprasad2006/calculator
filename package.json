@@ -7,10 +7,16 @@
     "start": "node server.js",
     "dev": "node --watch server.js"
   },
-  "keywords": ["calculator", "scientific", "full-stack", "express"],
+  "keywords": [
+    "calculator",
+    "scientific",
+    "full-stack",
+    "express"
+  ],
   "license": "MIT",
   "dependencies": {
-    "express": "^4.19.2",
-    "cors": "^2.8.5"
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
   }
 }

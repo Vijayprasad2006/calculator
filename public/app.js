@@ -1,3 +1,108 @@
+// --- Auth flow ---
+const authScreen = document.getElementById('authScreen');
+const appShell = document.getElementById('appShell');
+const authForm = document.getElementById('authForm');
+const authError = document.getElementById('authError');
+const authTitle = document.getElementById('authTitle');
+const authSubtitle = document.getElementById('authSubtitle');
+const authSubmit = document.getElementById('authSubmit');
+const authSwitchBtn = document.getElementById('authSwitchBtn');
+const authSwitchText = document.getElementById('authSwitchText');
+const nameField = document.getElementById('nameField');
+const nameInput = document.getElementById('nameInput');
+const emailInput = document.getElementById('emailInput');
+const passwordInput = document.getElementById('passwordInput');
+const userBadge = document.getElementById('userBadge');
+const logoutBtn = document.getElementById('logoutBtn');
+
+let authMode = 'login'; // 'login' | 'register'
+let currentUser = null;
+
+function setAuthMode(mode) {
+  authMode = mode;
+  const isLogin = mode === 'login';
+  authTitle.textContent = isLogin ? 'Welcome back' : 'Create your account';
+  authSubtitle.textContent = isLogin
+    ? 'Sign in to use the calculator and keep your own history.'
+    : 'Register to get a private history for your calculations.';
+  authSubmit.textContent = isLogin ? 'Sign in' : 'Create account';
+  authSwitchText.textContent = isLogin ? 'New here?' : 'Already have an account?';
+  authSwitchBtn.textContent = isLogin ? 'Create an account' : 'Sign in instead';
+  nameField.hidden = isLogin;
+  passwordInput.setAttribute('autocomplete', isLogin ? 'current-password' : 'new-password');
+  authError.hidden = true;
+}
+
+function showAuthError(msg) {
+  authError.textContent = '⚠ ' + msg;
+  authError.hidden = false;
+}
+
+authSwitchBtn.onclick = () => setAuthMode(authMode === 'login' ? 'register' : 'login');
+
+async function submitAuth(e) {
+  e.preventDefault();
+  authError.hidden = true;
+  authSubmit.disabled = true;
+  const payload = {
+    email: emailInput.value.trim(),
+    password: passwordInput.value,
+  };
+  if (authMode === 'register') payload.name = nameInput.value.trim();
+  try {
+    const r = await fetch('/api/auth/' + (authMode === 'login' ? 'login' : 'register'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await r.json();
+    if (!r.ok) { showAuthError(data.error || 'Authentication failed'); return; }
+    currentUser = data.user;
+    enterApp();
+  } catch {
+    showAuthError('Server unreachable. Is the backend running?');
+  } finally {
+    authSubmit.disabled = false;
+  }
+}
+authForm.addEventListener('submit', submitAuth);
+
+logoutBtn.onclick = async () => {
+  try { await fetch('/api/auth/logout', { method: 'POST' }); } catch { /* ignore */ }
+  currentUser = null;
+  showAuthScreen();
+};
+
+function showAuthScreen() {
+  authScreen.hidden = false;
+  appShell.hidden = true;
+  authForm.reset();
+  setAuthMode('login');
+}
+
+function enterApp() {
+  authScreen.hidden = true;
+  appShell.hidden = false;
+  userBadge.textContent = currentUser ? (currentUser.name || currentUser.email) : '';
+  loadHistory();
+}
+
+async function checkSession() {
+  try {
+    const r = await fetch('/api/auth/me');
+    if (r.ok) {
+      const data = await r.json();
+      currentUser = data.user;
+      enterApp();
+      return;
+    }
+  } catch { /* offline -> show login */ }
+  showAuthScreen();
+}
+
+setAuthMode('login');
+checkSession();
+
 const exprEl = document.getElementById('expression');
 const resultEl = document.getElementById('result');
 const errorEl = document.getElementById('error');
@@ -87,6 +192,7 @@ async function equals() {
       body: JSON.stringify({ expression: expr, angleMode }),
     });
     const data = await r.json();
+    if (r.status === 401) { if (!currentUser) showAuthScreen(); return; }
     if (!r.ok) { showError(data.error || 'Error'); return; }
     resultEl.textContent = '= ' + data.result;
     justEvaluated = true;
@@ -98,6 +204,7 @@ document.getElementById('equalsBtn').onclick = equals;
 async function loadHistory() {
   try {
     const r = await fetch('/api/history');
+    if (r.status === 401) { if (!currentUser) showAuthScreen(); return; }
     const items = await r.json();
     if (!items.length) { historyList.innerHTML = '<p class="empty">No calculations yet.</p>'; return; }
     historyList.innerHTML = '';
@@ -136,4 +243,3 @@ document.addEventListener('keydown', (e) => {
 });
 
 render();
-loadHistory();

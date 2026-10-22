@@ -1,0 +1,5 @@
+# Runtime data (users.json, sessions.json) — contains password hashes and live
+# session tokens, must never be committed.
+data/
+.env
+*.log
