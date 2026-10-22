@@ -7,6 +7,40 @@
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+<!-- Auth gate -->
+<section id="authScreen" class="auth-screen">
+  <form id="authForm" class="auth-card" autocomplete="on">
+    <div class="auth-brand">🧮 <span>demo1</span> Scientific Calculator</div>
+    <h1 id="authTitle">Welcome back</h1>
+    <p id="authSubtitle" class="auth-sub">Sign in to use the calculator and keep your own history.</p>
+
+    <div id="authError" class="error" hidden></div>
+
+    <label class="field" id="nameField" hidden>
+      <span>Name</span>
+      <input id="nameInput" type="text" name="name" placeholder="Your name" autocomplete="name" />
+    </label>
+
+    <label class="field">
+      <span>Email</span>
+      <input id="emailInput" type="email" name="email" placeholder="you@example.com" autocomplete="email" required />
+    </label>
+
+    <label class="field">
+      <span>Password</span>
+      <input id="passwordInput" type="password" name="password" placeholder="At least 8 characters" autocomplete="current-password" required minlength="8" />
+    </label>
+
+    <button id="authSubmit" type="submit" class="auth-submit">Sign in</button>
+
+    <p class="auth-switch">
+      <span id="authSwitchText">New here?</span>
+      <button type="button" id="authSwitchBtn" class="link-btn">Create an account</button>
+    </p>
+  </form>
+</section>
+
+<div id="appShell" hidden>
 <header class="topbar">
   <div class="brand">🧮 <span>demo1</span> Scientific Calculator</div>
   <div class="top-actions">
@@ -15,6 +49,8 @@
       <button id="radBtn" title="Radians">RAD</button>
     </div>
     <button id="themeBtn" title="Toggle theme">🌙</button>
+    <span id="userBadge" class="user-badge" title="Signed in user"></span>
+    <button id="logoutBtn" class="small-danger" title="Sign out">Sign out</button>
   </div>
 </header>
 
@@ -94,6 +130,7 @@
 </main>
 
 <footer>Full-stack: Express API (<code>/api/calculate</code>) + file history • demo1 @ Downloads/demo1</footer>
+</div>
 <script src="app.js"></script>
 </body>
 </html>

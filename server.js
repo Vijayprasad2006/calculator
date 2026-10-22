@@ -3,16 +3,33 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const { evaluate } = require('./lib/calculator');
+const {
+  registerUser,
+  verifyPassword,
+  findUserByEmail,
+  publicUser,
+  createSession,
+  destroySession,
+  attachUser,
+  requireAuth,
+  requireSameOrigin,
+  isRateLimited,
+  recordFailure,
+  clearFailures,
+  sessionCookieOptions,
+} = require('./lib/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+// Only allow same-origin browser requests (the frontend is served by this app).
+app.use(cors({ origin: false }));
 app.use(express.json({ limit: '50kb' }));
+app.use(attachUser);
 // Serve frontend
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- History persistence (JSON file, max 100 entries) ---
+// --- History persistence (JSON file, max 100 entries per user) ---
 const HISTORY_FILE = path.join(__dirname, 'history.json');
 let history = [];
 try {
@@ -24,15 +41,65 @@ try {
 
 function saveHistory() {
   try {
-    fs.writeFileSync(HISTORY_FILE, JSON.stringify(history.slice(0, 100), null, 2));
+    fs.writeFileSync(HISTORY_FILE, JSON.stringify(history.slice(0, 500), null, 2));
   } catch (e) {
     console.error('Failed to save history:', e.message);
   }
 }
 
+function userHistory(userId) {
+  return history.filter((h) => h.userId === userId);
+}
+
+// --- Auth API ---
+app.post('/api/auth/register', requireSameOrigin, async (req, res) => {
+  try {
+    const { email, password, name } = req.body || {};
+    const result = await registerUser({ email, password, name });
+    if (result.error) return res.status(400).json({ error: result.error });
+    const token = createSession(result.user.id);
+    res.cookie('sid', token, sessionCookieOptions(req));
+    res.status(201).json({ user: publicUser(result.user) });
+  } catch (err) {
+    res.status(500).json({ error: 'Registration failed' });
+  }
+});
+
+app.post('/api/auth/login', requireSameOrigin, async (req, res) => {
+  try {
+    const { email, password } = req.body || {};
+    if (isRateLimited(req, email)) {
+      return res.status(429).json({ error: 'Too many attempts. Try again in a few minutes.' });
+    }
+    const user = findUserByEmail(email);
+    const ok = await verifyPassword(user, password);
+    if (!ok) {
+      recordFailure(req, email);
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+    clearFailures(req, email);
+    const token = createSession(user.id);
+    res.cookie('sid', token, sessionCookieOptions(req));
+    res.json({ user: publicUser(user) });
+  } catch (err) {
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+app.post('/api/auth/logout', requireSameOrigin, (req, res) => {
+  destroySession(req.sessionToken);
+  res.clearCookie('sid', { path: '/' });
+  res.json({ ok: true });
+});
+
+app.get('/api/auth/me', (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Not authenticated', user: null });
+  res.json({ user: publicUser(req.user) });
+});
+
 // --- API ---
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', time: new Date().toISOString() });
+  res.json({ status: 'ok', time: new Date().toISOString(), authenticated: !!req.user });
 });
 
 app.get('/api/functions', (req, res) => {
@@ -43,7 +110,7 @@ app.get('/api/functions', (req, res) => {
   });
 });
 
-app.post('/api/calculate', (req, res) => {
+app.post('/api/calculate', requireAuth, requireSameOrigin, (req, res) => {
   const { expression, angleMode } = req.body || {};
   try {
     if (typeof expression !== 'string' || !expression.trim()) {
@@ -53,13 +120,14 @@ app.post('/api/calculate', (req, res) => {
     const result = evaluate(expression, mode);
     const entry = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      userId: req.user.id,
       expression: expression.trim(),
       result,
       angleMode: mode,
       createdAt: new Date().toISOString(),
     };
     history.unshift(entry);
-    history = history.slice(0, 100);
+    history = history.slice(0, 500);
     saveHistory();
     res.json(entry);
   } catch (err) {
@@ -67,18 +135,18 @@ app.post('/api/calculate', (req, res) => {
   }
 });
 
-app.get('/api/history', (req, res) => {
-  res.json(history);
+app.get('/api/history', requireAuth, (req, res) => {
+  res.json(userHistory(req.user.id).slice(0, 100));
 });
 
-app.delete('/api/history', (req, res) => {
-  history = [];
+app.delete('/api/history', requireAuth, requireSameOrigin, (req, res) => {
+  history = history.filter((h) => h.userId !== req.user.id);
   saveHistory();
   res.json({ ok: true });
 });
 
-app.delete('/api/history/:id', (req, res) => {
-  history = history.filter((h) => h.id !== req.params.id);
+app.delete('/api/history/:id', requireAuth, requireSameOrigin, (req, res) => {
+  history = history.filter((h) => !(h.userId === req.user.id && h.id === req.params.id));
   saveHistory();
   res.json({ ok: true });
 });
